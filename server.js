@@ -7,6 +7,14 @@ const fs = require('fs');
 const app = express();
 app.use(express.json());
 
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    console.error('Erro de JSON:', err.message);
+    return res.status(400).json({ error: 'JSON mal formatado. Por favor, verifique a sintaxe do corpo da requisição.' });
+  }
+  next();
+});
+
 const imagesDir = path.join(__dirname, 'images');
 if (!fs.existsSync(imagesDir)) {
   fs.mkdirSync(imagesDir);
@@ -20,13 +28,6 @@ const isValidUrl = (url) => {
     return false;
   }
 };
-
-app.use((req, res, next) => {
-  if (process.env.NODE_ENV === 'production' && req.protocol !== 'https') {
-    return res.status(403).json({ error: 'Use HTTPS para acessar a API.' });
-  }
-  next();
-});
 
 app.post('/edit-image', async (req, res) => {
   const { imageUrl, title, description } = req.body;
