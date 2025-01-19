@@ -7,6 +7,11 @@ const fs = require('fs');
 const app = express();
 app.use(express.json());
 
+const imagesDir = path.join(__dirname, 'images');
+if (!fs.existsSync(imagesDir)) {
+  fs.mkdirSync(imagesDir);
+}
+
 app.post('/edit-image', async (req, res) => {
   const { imageUrl, title, description } = req.body;
 
@@ -34,17 +39,17 @@ app.post('/edit-image', async (req, res) => {
       .toBuffer();
 
     const fileName = `edited-${Date.now()}.png`;
-    const filePath = path.join(__dirname, 'images', fileName);
+    const filePath = path.join(imagesDir, fileName);
     fs.writeFileSync(filePath, editedImage);
 
-    res.json({ imageUrl: `http://localhost:3000/images/${fileName}` });
+    res.json({ imageUrl: `${req.protocol}://${req.get('host')}/images/${fileName}` });
   } catch (error) {
     console.error('Erro ao editar imagem:', error.message);
     res.status(500).json({ error: 'Erro ao editar a imagem.' });
   }
 });
 
-app.use('/images', express.static(path.join(__dirname, 'images')));
+app.use('/images', express.static(imagesDir));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
