@@ -21,6 +21,13 @@ const isValidUrl = (url) => {
   }
 };
 
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && req.protocol !== 'https') {
+    return res.status(403).json({ error: 'Use HTTPS para acessar a API.' });
+  }
+  next();
+});
+
 app.post('/edit-image', async (req, res) => {
   const { imageUrl, title, description } = req.body;
 
@@ -33,6 +40,8 @@ app.post('/edit-image', async (req, res) => {
   }
 
   try {
+    console.log('Recebido:', JSON.stringify(req.body, null, 2));
+
     const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
     const imageBuffer = Buffer.from(response.data);
 
@@ -66,13 +75,6 @@ app.post('/edit-image', async (req, res) => {
 });
 
 app.use('/images', express.static(imagesDir));
-
-app.use((req, res, next) => {
-  if (process.env.NODE_ENV === 'production' && req.protocol !== 'https') {
-    return res.status(403).json({ error: 'Use HTTPS para acessar a API.' });
-  }
-  next();
-});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
