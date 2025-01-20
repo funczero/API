@@ -7,7 +7,6 @@ const fs = require('fs');
 const app = express();
 app.use(express.json());
 
-// Middleware para capturar erros de JSON mal formatados
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     console.error('Erro de JSON:', err.message);
