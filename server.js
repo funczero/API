@@ -3,16 +3,15 @@ const sharp = require('sharp');
 const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
-const cors = require('cors');
 
 const app = express();
 app.use(express.json());
-app.use(cors());
 
+// Middleware para capturar erros de JSON mal formatados
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     console.error('Erro de JSON:', err.message);
-    return res.status(400).json({ error: 'JSON mal formatado. Verifique a sintaxe do corpo da requisição.' });
+    return res.status(400).json({ error: 'JSON mal formatado. Por favor, verifique a sintaxe do corpo da requisição.' });
   }
   next();
 });
@@ -31,10 +30,6 @@ const isValidUrl = (url) => {
   }
 };
 
-const sanitizeText = (text) => {
-  return text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, "'");
-};
-
 app.post('/edit-image', async (req, res) => {
   const { imageUrl, title, description } = req.body;
 
@@ -46,36 +41,33 @@ app.post('/edit-image', async (req, res) => {
     return res.status(400).json({ error: 'URL inválida para a imagem.' });
   }
 
-  if (title.length > 50 || description.length > 100) {
-    return res.status(400).json({ error: 'Título ou descrição muito longos.' });
-  }
-
   try {
     console.log('Recebido:', JSON.stringify(req.body, null, 2));
 
     const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
     const imageBuffer = Buffer.from(response.data);
 
+    const safeTitle = title.replace(/"/g, "'");
+    const safeDescription = description.replace(/"/g, "'");
+
     const editedImage = await sharp(imageBuffer)
-      .resize(800, 400)
       .composite([
         {
           input: Buffer.from(
             `<svg width="800" height="400">
               <rect x="0" y="0" width="800" height="400" fill="rgba(0, 0, 0, 0.5)" />
-              <text x="400" y="150" font-size="40" fill="white" text-anchor="middle">${sanitizeText(title)}</text>
-              <text x="400" y="300" font-size="30" fill="white" text-anchor="middle">${sanitizeText(description)}</text>
+              <text x="400" y="150" font-size="40" fill="white" text-anchor="middle">${safeTitle}</text>
+              <text x="400" y="300" font-size="30" fill="white" text-anchor="middle">${safeDescription}</text>
             </svg>`
           ),
           gravity: 'center',
         },
       ])
-      .png()
       .toBuffer();
 
     const fileName = `edited-${Date.now()}.png`;
     const filePath = path.join(imagesDir, fileName);
-    await fs.promises.writeFile(filePath, editedImage);
+    fs.writeFileSync(filePath, editedImage);
 
     res.json({ imageUrl: `${req.protocol}://${req.get('host')}/images/${fileName}` });
   } catch (error) {
