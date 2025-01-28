@@ -6,6 +6,7 @@ const cors = require('cors');
 const app = express();
 app.use(express.json());
 app.use(cors());
+
 const botInfo = {
   name: "Punishment",
   description: "Bot de moderação para Discord.",
@@ -59,16 +60,30 @@ app.post('/api/commands', (req, res) => {
   }
 
   botInfo.commands.push({ name, description });
-  res.status(201).json({ message: "Comando adicionado com sucesso.", commands: botInfo.commands });
-});
-
-app.post('/api/save-commands', (req, res) => {
   try {
     fs.writeFileSync(commandsPath, JSON.stringify(botInfo.commands, null, 4));
-    res.json({ message: "Comandos salvos com sucesso." });
+    res.status(201).json({ message: "Comando adicionado e salvo com sucesso.", commands: botInfo.commands });
   } catch (error) {
-    console.error("Erro ao salvar comandos:", error.message);
-    res.status(500).json({ error: "Erro ao salvar os comandos." });
+    console.error("Erro ao salvar o comando:", error.message);
+    res.status(500).json({ error: "Erro ao salvar o comando." });
+  }
+});
+
+app.delete('/api/commands/:name', (req, res) => {
+  const commandName = req.params.name;
+  const commandIndex = botInfo.commands.findIndex(cmd => cmd.name === commandName);
+
+  if (commandIndex === -1) {
+    return res.status(404).json({ error: "Comando não encontrado." });
+  }
+
+  botInfo.commands.splice(commandIndex, 1);
+  try {
+    fs.writeFileSync(commandsPath, JSON.stringify(botInfo.commands, null, 4));
+    res.json({ message: "Comando removido com sucesso.", commands: botInfo.commands });
+  } catch (error) {
+    console.error("Erro ao remover comando:", error.message);
+    res.status(500).json({ error: "Erro ao remover o comando." });
   }
 });
 
