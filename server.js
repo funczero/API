@@ -1,81 +1,54 @@
 const express = require('express');
-const sharp = require('sharp');
-const axios = require('axios');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
 
 const app = express();
 app.use(express.json());
 
-app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    console.error('Erro de JSON:', err.message);
-    return res.status(400).json({ error: 'JSON mal formatado. Por favor, verifique a sintaxe do corpo da requisição.' });
-  }
-  next();
-});
-
-const imagesDir = path.join(__dirname, 'images');
-if (!fs.existsSync(imagesDir)) {
-  fs.mkdirSync(imagesDir);
-}
-
-const isValidUrl = (url) => {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
+const botInfo = {
+  name: "Punishment",
+  description: "Bot de moderação para Discord.",
+  version: "1.0.0",
+  developers: ["FuncZero"],
+  prefix: ".",
+  commands: [
+    { name: "help", description: "Exibe todos os comandos disponíveis." },
+    { name: "ban", description: "Bane um usuário do servidor." },
+    { name: "kick", description: "Expulsa um usuário do servidor." },
+    { name: "warn", description: "Envia um aviso para um usuário." },
+  ],
 };
 
-app.post('/edit-image', async (req, res) => {
-  const { imageUrl, title, description } = req.body;
-
-  if (!imageUrl || !title || !description) {
-    return res.status(400).json({ error: 'Parâmetros inválidos. Envie imageUrl, title e description.' });
-  }
-
-  if (!isValidUrl(imageUrl)) {
-    return res.status(400).json({ error: 'URL inválida para a imagem.' });
-  }
-
-  try {
-    console.log('Recebido:', JSON.stringify(req.body, null, 2));
-
-    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-    const imageBuffer = Buffer.from(response.data);
-
-    const safeTitle = title.replace(/"/g, "'");
-    const safeDescription = description.replace(/"/g, "'");
-
-    const editedImage = await sharp(imageBuffer)
-      .composite([
-        {
-          input: Buffer.from(
-            `<svg width="800" height="400">
-              <rect x="0" y="0" width="800" height="400" fill="rgba(0, 0, 0, 0.5)" />
-              <text x="400" y="150" font-size="40" fill="white" text-anchor="middle">${safeTitle}</text>
-              <text x="400" y="300" font-size="30" fill="white" text-anchor="middle">${safeDescription}</text>
-            </svg>`
-          ),
-          gravity: 'center',
-        },
-      ])
-      .toBuffer();
-
-    const fileName = `edited-${Date.now()}.png`;
-    const filePath = path.join(imagesDir, fileName);
-    fs.writeFileSync(filePath, editedImage);
-
-    res.json({ imageUrl: `${req.protocol}://${req.get('host')}/images/${fileName}` });
-  } catch (error) {
-    console.error('Erro ao editar imagem:', error.stack || error.message);
-    res.status(500).json({ error: `Erro ao editar a imagem: ${error.message}` });
-  }
+app.get('/api/bot-info', (req, res) => {
+  res.json(botInfo);
 });
 
-app.use('/images', express.static(imagesDir));
+app.get('/api/commands', (req, res) => {
+  res.json(botInfo.commands);
+});
+
+app.post('/api/commands', (req, res) => {
+  const { name, description } = req.body;
+
+  if (!name || !description) {
+    return res.status(400).json({ error: "Nome e descrição são obrigatórios." });
+  }
+
+  botInfo.commands.push({ name, description });
+  res.status(201).json({ message: "Comando adicionado com sucesso.", commands: botInfo.commands });
+});
+
+app.post('/api/save-commands', (req, res) => {
+  const commandsPath = path.join(__dirname, 'data', 'commands.json');
+
+  try {
+    fs.writeFileSync(commandsPath, JSON.stringify(botInfo.commands, null, 4));
+    res.json({ message: "Comandos salvos com sucesso." });
+  } catch (error) {
+    console.error("Erro ao salvar comandos:", error.message);
+    res.status(500).json({ error: "Erro ao salvar os comandos." });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
