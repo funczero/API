@@ -56,13 +56,13 @@ app.post('/api/commands', (req, res) => {
 
   const existingCommand = botInfo.commands.find(cmd => cmd.name === name);
   if (existingCommand) {
-    return res.status(400).json({ error: "O comando já existe." });
+    return res.status(400).json({ error: "<:1000042883:1336044555354771638> O comando já existe." });
   }
 
   botInfo.commands.push({ name, description });
   try {
     fs.writeFileSync(commandsPath, JSON.stringify(botInfo.commands, null, 4));
-    res.status(201).json({ message: "Comando adicionado e salvo com sucesso.", commands: botInfo.commands });
+    res.status(201).json({ message: "<:1000042885:1336044571125354496> Comando adicionado e salvo com sucesso.", commands: botInfo.commands });
   } catch (error) {
     console.error("Erro ao salvar o comando:", error.message);
     res.status(500).json({ error: "Erro ao salvar o comando." });
@@ -74,13 +74,13 @@ app.delete('/api/commands/:name', (req, res) => {
   const commandIndex = botInfo.commands.findIndex(cmd => cmd.name === commandName);
 
   if (commandIndex === -1) {
-    return res.status(404).json({ error: "Comando não encontrado." });
+    return res.status(404).json({ error: "<:1000042883:1336044555354771638> Comando não encontrado." });
   }
 
   botInfo.commands.splice(commandIndex, 1);
   try {
     fs.writeFileSync(commandsPath, JSON.stringify(botInfo.commands, null, 4));
-    res.json({ message: "Comando removido com sucesso.", commands: botInfo.commands });
+    res.json({ message: "<:1000042885:1336044571125354496> Comando removido com sucesso.", commands: botInfo.commands });
   } catch (error) {
     console.error("Erro ao remover comando:", error.message);
     res.status(500).json({ error: "Erro ao remover o comando." });
