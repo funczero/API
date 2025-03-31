@@ -3,7 +3,7 @@
 ## Creative Commons Atribuição-NãoComercial-CompartilhaIgual 4.0 Internacional
 
 Desenvolvedor: FuncZero  
-Projeto: API (Punishment) 
+Projeto: API-Punishment 
 Licença: Creative Commons Atribuição-NãoComercial-CompartilhaIgual 4.0 Internacional  
 
 ---
